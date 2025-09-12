@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Madrid Property App Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, sans-serif; margin: 20px; background-color: #f5f5f7; color: #1d1d1f; }
+        h1, h3 { text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { background-color: #007AFF; color: white; padding: 16px; border: none; border-radius: 12px; width: 100%; font-size: 18px; font-weight: 600; margin-top: 10px; }
+        .result-box { background-color: #f8f8fa; padding: 12px; border-radius: 8px; margin: 8px 0; }
+        .result-label { font-weight: 600; color: #007AFF; }
+        #finalResult { font-size: 24px; font-weight: bold; text-align: center; margin-top: 20px; padding: 15px; border-radius: 12px; background-color: #e6f4ff; }
+    </style>
+</head>
+<body>
+    <h1>Madrid Rent vs. Buy Calculator</h1>
+
+    <div class="card">
+        <h3>Input Your Scenario</h3>
+        <label>Purchase Price (€)</label>
+        <input type="number" id="price" value="695000">
+
+        <label>Comparable Monthly Rent (€)</label>
+        <input type="number" id="rent" value="2000">
+
+        <label>Annual Salary (€)</label>
+        <input type="number" id="salary" value="100000">
+
+        <label>Cash Deposit (€)</label>
+        <input type="number" id="deposit" value="60000">
+
+        <label>Mortgage Interest Rate (%)</label>
+        <input type="number" id="mortgageRate" value="4.5" step="0.1">
+
+        <label>Expected Sale Price Gain in 5 Yrs (%)</label>
+        <input type="number" id="gain" value="20">
+
+        <button onclick="calculate()">Calculate Full Scenario</button>
+    </div>
+
+    <div class="card">
+        <h3>Final Result</h3>
+        <div class="result-box"><span class="result-label">Total Cost of Renting (5 Yrs):</span> <span id="outRentCost">€0</span></div>
+        <div class="result-box"><span class="result-label">Net Cost of Ownership (5 Yrs):</span> <span id="outNetCost">€0</span></div>
+        <div id="finalResult">+€0 Better Off by Buying</div>
+    </div>
+
+    <div class="card">
+        <h3>Purchase Breakdown</h3>
+        <div class="result-box"><span class="result-label">Max. Mortgage Offered:</span> <span id="outMortgage">€0</span></div>
+        <div class="result-box"><span class="result-label">Loan Required from Dad:</span> <span id="outDadLoan">€0</span></div>
+        <div class="result-box"><span class="result-label">Total Purchase Costs (Taxes+Fees):</span> <span id="outPurchaseCosts">€0</span></div>
+    </div>
+
+    <div class="card">
+        <h3>5-Year Ownership Costs</h3>
+        <div class="result-box"><span class="result-label">Total Mortgage Payments:</span> <span id="outTotalMortgagePaid">€0</span></div>
+        <div class="result-box"><span class="result-label">Total Interest Paid:</span> <span id="outInterestPaid">€0</span></div>
+        <div class="result-box"><span class="result-label">Total Ongoing Costs (Repairs, Fees, Taxes):</span> <span id="outOngoingCosts">€0</span></div>
+    </div>
+
+    <div class="card">
+        <h3>Sale After 5 Years</h3>
+        <div class="result-box"><span class="result-label">Sale Price:</span> <span id="outSalePrice">€0</span></div>
+        <div class="result-box"><span class="result-label">Sale Costs & Fees:</span> <span id="outSaleCosts">€0</span></div>
+        <div class="result-box"><span class="result-label">Remaining Mortgage Balance:</span> <span id="outRemainingMortgage">€0</span></div>
+        <div class="result-box"><span class="result-label">Capital Gains Tax Due:</span> <span id="outCGT">€0</span></div>
+        <div class="result-box"><span class="result-label">Cash from Sale (After Taxes & Debts):</span> <span id="outCashFromSale">€0</span></div>
+    </div>
+
+    <script>
+        function calculate() {
+            // GET ALL INPUT VALUES
+            let price = Number(document.getElementById("price").value);
+            let rent = Number(document.getElementById("rent").value);
+            let salary = Number(document.getElementById("salary").value);
+            let deposit = Number(document.getElementById("deposit").value);
+            let mortgageRate = Number(document.getElementById("mortgageRate").value) / 100;
+            let gain = Number(document.getElementById("gain").value) / 100;
+
+            // FIXED ASSUMPTIONS
+            let ongoingMonthlyCosts = 375;
+            let purchaseCostsRate = 0.105;
+            let saleCostsRate = 0.045;
+
+            // 1. CALCULATE PURCHASE DETAILS
+            let purchaseCosts = price * purchaseCostsRate;
+            let maxMortgage = Math.min(380000 * (salary / 100000), price * 0.8);
+            let loanFromDad = Math.max(0, (price + purchaseCosts) - deposit - maxMortgage);
+
+            let monthlyRate = mortgageRate / 12;
+            let numberOfPayments = 25 * 12;
+            let monthlyPayment = maxMortgage * (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+
+            // 2. CALCULATE 5-YEAR OWNERSHIP
+            let paymentsMade = 5 * 12;
+            let remainingBalance = maxMortgage * (Math.pow(1 + monthlyRate, numberOfPayments) - Math.pow(1 + monthlyRate, paymentsMade)) / (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+            let totalInterestPaid = (monthlyPayment * paymentsMade) - (maxMortgage - remainingBalance);
+            let totalMortgagePaid = monthlyPayment * paymentsMade;
+            let totalOngoingCosts = ongoingMonthlyCosts * paymentsMade;
+
+            // 3. CALCULATE SALE AFTER 5 YEARS
+            let salePrice = price * (1 + gain);
+            let saleCosts = salePrice * saleCostsRate;
+            let netGain = salePrice - price - purchaseCosts - saleCosts;
+            let capitalGainsTax = Math.max(0, netGain * 0.19);
+            let cashFromSale = salePrice - remainingBalance - loanFromDad - saleCosts - capitalGainsTax;
+
+            // 4. FINAL COMPARISON
+            let totalCashSpent = deposit + totalMortgagePaid + totalOngoingCosts;
+            let netCostOfOwnership = totalCashSpent - cashFromSale;
+            let costOfRenting = rent * paymentsMade;
+            let netGainFromBuying = costOfRenting - netCostOfOwnership;
+
+            // 5. UPDATE THE DISPLAY
+            document.getElementById("outMortgage").textContent = '€' + Math.round(maxMortgage).toLocaleString('en-US');
+            document.getElementById("outDadLoan").textContent = '€' + Math.round(loanFromDad).toLocaleString('en-US');
+            document.getElementById("outPurchaseCosts").textContent = '€' + Math.round(purchaseCosts).toLocaleString('en-US');
+
+            document.getElementById("outTotalMortgagePaid").textContent = '€' + Math.round(totalMortgagePaid).toLocaleString('en-US');
+            document.getElementById("outInterestPaid").textContent = '€' + Math.round(totalInterestPaid).toLocaleString('en-US');
+            document.getElementById("outOngoingCosts").textContent = '€' + Math.round(totalOngoingCosts).toLocaleString('en-US');
+
+            document.getElementById("outSalePrice").textContent = '€' + Math.round(salePrice).toLocaleString('en-US');
+            document.getElementById("outSaleCosts").textContent = '€' + Math.round(saleCosts).toLocaleString('en-US');
+            document.getElementById("outRemainingMortgage").textContent = '€' + Math.round(remainingBalance).toLocaleString('en-US');
+            document.getElementById("outCGT").textContent = '€' + Math.round(capitalGainsTax).toLocaleString('en-US');
+            document.getElementById("outCashFromSale").textContent = '€' + Math.round(cashFromSale).toLocaleString('en-US');
+
+            document.getElementById("outRentCost").textContent = '€' + Math.round(costOfRenting).toLocaleString('en-US');
+            document.getElementById("outNetCost").textContent = '€' + Math.round(netCostOfOwnership).toLocaleString('en-US');
+
+            let resultElement = document.getElementById("finalResult");
+            resultElement.textContent = (netGainFromBuying >= 0 ? "+€" : "-€") + Math.abs(Math.round(netGainFromBuying)).toLocaleString('en-US') + " Better Off by Buying";
+            resultElement.style.backgroundColor = netGainFromBuying >= 0 ? '#e6f4ff' : '#ffe6e6';
+        }
+        calculate();
+    </script>
+</body>
+</html>
